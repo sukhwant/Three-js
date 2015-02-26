@@ -71,9 +71,9 @@
 				var color = new THREE.Color();
 				color.setHSL(Math.random(), Math.random(), Math.random());
 				var material = new THREE.MeshPhongMaterial({
-						map : map,
+						//map : map,
 						color : color,
-						envMap : textureCube
+						//envMap : textureCube
 					});
 
 				var object = new THREE.Mesh(new THREE.SphereGeometry(75, 25, 20), material);
