@@ -1,0 +1,186 @@
+<html>
+	<head>
+		<title>Spheres</title>
+		<style>
+			body { margin: 0; }
+			canvas { width: 100%; height: 100% }
+		</style>
+        <title>Cubes</title>
+	</head>
+	<body style="background-color: black;">
+		<script src="stats.min.js"></script>
+		<script src="three.js"></script>
+		
+		<script>
+			var container, stats,effect,
+			total=0,
+			nMax=100;
+			var objects = [];
+			
+			container = document.createElement( 'div' );
+			document.body.appendChild( container );
+				
+			var scene = new THREE.Scene();
+			scene.fog=new THREE.Fog( 0x000000, 900, 2600 );
+			var camera = new THREE.PerspectiveCamera( 45, window.innerWidth/window.innerHeight, 0.1, 2000 );
+			
+			var renderer = new THREE.WebGLRenderer();
+			renderer.setSize( window.innerWidth, window.innerHeight );
+			document.body.appendChild( renderer.domElement );
+			
+			stats = new Stats();
+			stats.domElement.style.position = 'absolute';
+			stats.domElement.style.top = '0px';
+			container.appendChild( stats.domElement );
+				
+			var light;
+
+			scene.add( new THREE.AmbientLight( 0x404040 ) );
+
+			light = new THREE.DirectionalLight( 0xffffff );
+			light.position.set( 0, 0, 1000 );
+			light.target.position.set(0,0,0);
+			scene.add( light );
+			
+			light2 = new THREE.DirectionalLight( 0xffffff );
+			light2.position.set( 0, 0, -1000 );
+			light2.target.position.set(0,0,0);
+			scene.add( light2 );
+			
+			var spotLight = new THREE.SpotLight(0xffffff, 2);
+			spotLight.position.set(0, 0, 1000);
+			scene.add(spotLight);
+
+			var map = THREE.ImageUtils.loadTexture( 'planet.png' );
+			map.wrapS = map.wrapT = THREE.RepeatWrapping;
+			map.anisotropy = 16;
+
+			var path = "pisa/";
+			var format = '.jpg';
+			var urls = [
+				path + 'px' + format, path + 'nx' + format,
+				path + 'py' + format, path + 'ny' + format,
+				path + 'pz' + format, path + 'nz' + format
+			];
+
+			var textureCube = THREE.ImageUtils.loadTextureCube(urls);
+	
+			for(i=0;i<nMax;i++){
+				var object3 = new THREE.Object3D();
+				
+				var color = new THREE.Color();
+				color.setHSL(Math.random(), Math.random(), Math.random());
+				var material = new THREE.MeshPhongMaterial({
+						map : map,
+						color : color,
+						envMap : textureCube
+					});
+
+				var object = new THREE.Mesh(new THREE.SphereGeometry(75, 25, 20), material);
+				var x,
+				y,
+				z;
+				x = Math.random() * 1600 - 800;
+				y = Math.random() * 1000 - 500;
+				z = Math.random() * 1600 - 800;
+				
+				object.position.set( x, y, z );
+				objects.push(object);
+				object3.add(object);
+				scene.add(object3);
+			}
+			
+			
+			var particles = new THREE.Geometry;
+			for (var p = 0; p < 2000; p++) {
+				var particle = new THREE.Vector3(Math.random() * 2200 - 1100, y = Math.random() * 2200 - 1100, Math.random() * 1000 - 500);
+				particles.vertices.push(particle);
+			}
+
+			var colors = [];
+			for (var i = 0; i < particles.vertices.length; i++) {
+
+				// random color
+				colors[i] = new THREE.Color();
+				colors[i].setHSL(Math.random(), 1.0, 0.5);
+
+			}
+			particles.colors = colors;
+
+			// material
+			var particleMaterial = new THREE.ParticleBasicMaterial({
+					size : 6,
+					transparent : true,
+					opacity : 0.7,
+					vertexColors : THREE.VertexColors
+				});
+			var pMaterial = new THREE.ParticleBasicMaterial({
+					color : 0xFFFFFF,
+					size : 20,
+					//map : THREE.ImageUtils.loadTexture("particle.png"),
+					blending : THREE.AdditiveBlending,
+					transparent : true
+				});
+
+			var particleSystem = new THREE.ParticleSystem(particles, particleMaterial);
+			particleSystem.sortParticles = true;
+			
+			scene.add(particleSystem);
+			
+			camera.position.z = 1600;
+			document.addEventListener('mousedown', onDocumentMouseDown, false);
+			projector = new THREE.Projector();
+				
+			function onDocumentMouseDown(event) {
+
+				event.preventDefault();
+
+				var vector = new THREE.Vector3((event.clientX / window.innerWidth) * 2 - 1,  - (event.clientY / window.innerHeight) * 2 + 1, 0.5);
+				projector.unprojectVector(vector, camera);
+
+				var raycaster = new THREE.Raycaster(camera.position, vector.sub(camera.position).normalize());
+
+				var intersects = raycaster.intersectObjects(objects);
+
+				if (intersects.length > 0) {
+
+					intersects[0].object.material.color.setHex(Math.random() * 0xffffff);
+					//alert("Found one planet");
+
+				}
+			}
+					
+				
+			var render = function () {
+								
+				var timer = Date.now() * 0.0001;
+				
+				for ( var i = 0, l = scene.children.length; i < l; i ++ ) {
+
+					var object = scene.children[ i ];
+					if(object instanceof THREE.ParticleSystem){
+						object.rotation.x = timer * i*.008;
+						object.rotation.y = timer * i*.008;
+						object.rotation.z = timer * i*.008;
+					}
+					else {
+						if(object.children[0] instanceof THREE.Mesh){
+							object.children[0].rotation.x = timer * i*.09;
+							object.children[0].rotation.y = timer * i*.09;
+							object.children[0].rotation.z = timer * i*.09;
+						}
+						object.rotation.x = timer * i*.05;
+						object.rotation.y = timer * i*.05;
+						object.rotation.z = timer * i*.05;
+					}
+
+				}
+				stats.update();
+				renderer.render( scene, camera );
+				requestAnimationFrame( render );
+			};
+
+			render();
+		</script>
+	</body>
+</html>
